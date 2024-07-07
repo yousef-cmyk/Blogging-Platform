@@ -1,58 +1,74 @@
+const { validationResult } = require('express-validator');
 
-const {validationResult}=require('express-validator')
-let { articles } = require("../data/articles")
+let mango = require('../models/article.models');
 
-const getAllArticles = (req, res) => {
-    res.json(articles);
-}
-
-const getOneArticle = (req, res) => {
-    id = +req.params.articleId
-    const article = articles.find((article) => article.id === id)
-    if (article === undefined) {
-        res.status(404).json("there is no course with this id")
+const getAllArticles = async (req, res) => {
+    try {
+        const articles = await mango.find()
+        res.status(200).json(articles);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
     }
-    else {
-        res.json(articles[id - 1])
+};
+
+const getOneArticle = async (req, res) => {
+    const id = req.params.articleId;
+    try {
+        const article = await mango.findById(id);
+        if (!article) {
+            res.status(404).json({ error: "No article found with this ID" });
+        } else {
+            res.json(article);
+        }
+    } catch (error) {
+        res.status(500).json({ error: error.message });
     }
-}
+};
 
-const createArticle = (req, res) => {
-
-    const errors = validationResult(req)
+const createArticle = async (req, res) => {
+    const errors = validationResult(req);
     if (!errors.isEmpty()) {
-        return res.status(400).json(errors)
+        return res.status(400).json({ errors: errors.array() });
     }
-    const article = { id: articles.length + 1, ...req.body }
-    articles.push(article)
-    res.status(201).json(article)
-}
-
-const updateArticle = (req, res) => {
-
-    id = +req.params.articleId
-    let article = articles.find((article) => article.id === id)
-    if (!article) {
-        res.status(404).json("there is no course with this id")
+    const article = { ...req.body ,"date":new Date()};
+    const saved=new mango(article)
+    try {
+        await saved.save();
+        res.status(201).json(article);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
     }
-    article = { ...article, ...req.body }
-    res.status(200).json(article)
-}
+};
 
-const deleteArticle = (req, res) => {
-    let id = +req.params.articleId
-    let article = articles.find((article) => article.id = id)
-    if (!article) {
-        return res.status(404).json("no course has this id")
+const deleteArticle = async (req, res) => {
+    const id = req.params.articleId;
+    try {
+        await mango.deleteOne({_id:req.params.articleId});
+        res.status(200).json({ message: "Article deleted successfully" });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
     }
-    articles = articles.filter((article) => article.id !== id)
-    res.status(200).json(articles)
-}
+};
 
-module.exports={
+const updateArticle = async (req, res) => {
+    const id = req.params.articleId;
+    const updated = { ...req.body ,"date":new Date()};
+    try {
+        const article = await mango.findByIdAndUpdate(id,{$set:updated});
+        if (!article) {
+            res.status(404).json({ error: "No article found with this ID" });
+        } else {
+            res.status(200).json(article);
+        }
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+module.exports = {
     getAllArticles,
     getOneArticle,
     createArticle,
-    updateArticle,
     deleteArticle,
-}
+    updateArticle,
+};
