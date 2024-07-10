@@ -3,12 +3,12 @@ const { validationResult } = require('express-validator');
 let mango = require('../models/article.models');
 
 const getAllArticles = async (req, res) => {
-    try {
-        const articles = await mango.find()
-        res.status(200).json(articles);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
+        try {
+                const articles = await mango.find({})
+                res.status(200).json(articles);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
 };
 
 const getOneArticle = async (req, res) => {
